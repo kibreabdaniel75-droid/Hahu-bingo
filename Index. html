@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hahu Bingo</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <style>
+        :root {
+            --bg-dark: #111422;
+            --card-bg: #1c2138;
+            --text-main: #ffffff;
+            --text-muted: #8b92a5;
+            --gold: #eab308;
+            --btn-green: #10b981;
+            --btn-purple: #4f46e5;
+            --border-color: rgba(234, 179, 8, 0.2);
+            --nav-bg: #161a2b;
+            --marked-bg: #eab308;
+            --marked-text: #111422;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            flex-shrink: 0;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            background: white;
+            color: #1e3a8a;
+            font-weight: 900;
+            font-size: 18px;
+            padding: 8px 10px;
+            border-radius: 12px;
+        }
+
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--gold);
+        }
+
+        .icon-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        /* Main Container */
+        main {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .screen {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            width: 100%;
+        }
+
+        .screen.hidden {
+            display: none;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        /* --- SCREEN 1: STAKE SELECTION --- */
+        .welcome-text {
+            font-size: 26px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 30px;
+            margin-top: 10px;
+        }
+
+        .welcome-text span { color: var(--gold); }
+
+        .stake-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 25px;
+        }
+
+        .play-btn {
+            width: 100%;
+            padding: 18px;
+            border-radius: 16px;
+            border: none;
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .play-btn:active { transform: scale(0.98); }
+        .btn-green { background-color: var(--btn-green); }
+        .btn-purple { background-color: var(--btn-purple); }
+
+        .demo-text {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: 15px;
+            line-height: 1.5;
+        }
+
+        /* --- SCREEN 2: BINGO BOARD --- */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+        }
+
+        .current-ball {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ball-circle {
+            width: 50px;
+            height: 50px;
+            background: var(--gold);
+            color: var(--bg-dark);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: 900;
+            box-shadow: 0 0 15px rgba(234, 179, 8, 0.4);
+        }
+
+        .ball-label { font-size: 14px; color: var(--text-muted); }
+
+        .bingo-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .bingo-cell {
+            aspect-ratio: 1;
+            background: var(--card-bg);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+
+        .bingo-cell.marked {
+            background: var(--marked-bg);
+            color: var(--marked-text);
+            border-color: var(--gold);
+            transform: scale(0.95);
+        }
+
+        .bingo-cell.free-space {
+            background: var(--btn-purple);
+            color: white;
+            font-size: 14px;
+            border-color: var(--btn-purple);
+        }
+
+        .draw-btn {
+            width: 100%;
+            padding: 18px;
+            border-radius: 16px;
+            border: none;
+            background: var(--btn-green);
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: auto;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .draw-btn:active { transform: scale(0.98); }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            background-color: var(--nav-bg);
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+            border-top: 1px solid rgba(255,255,255,0.05);
+            flex-shrink: 0;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 500;
+            background: none;
+            border: none;
+        }
+
+        .nav-item.active { color: var(--gold); }
+        .nav-icon { font-size: 20px; }
+    </style>
+</head>
+<body>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+        
+        // Track if user has unlocked the game
+        let isUnlocked = false;
+    </script>
+
+    <header>
+        <div class="logo-container">
+            <div class="logo-icon">B2</div>
+            <div class="logo-text">Hahu Bingo</div>
+        </div>
+        <button class="icon-btn" onclick="resetGame()">🔄 Restart</button>
+    </header>
+
+    <main>
+        <!-- SCREEN 1: STAKE SELECTION -->
+        <div id="screen-stake" class="screen">
+            <h1 class="welcome-text">Welcome to <span>Hahu Bingo</span></h1>
+            <div class="stake-card">
+                <div class="card-title">▷ Choose Your Stake</div>
+                
+                <!-- LOCK BUTTON (Shows first) -->
+                <button id="unlock-btn" class="play-btn btn-purple" onclick="requestContactAndJoin()">
+                    🔒 Share Contact to Unlock
+                </button>
+
+                <!-- PLAY BUTTONS (Hidden initially) -->
+                <div id="play-actions" class="hidden" style="width: 100%; display: flex; flex-direction: column;">
+                    <button class="play-btn btn-green" onclick="startGame(10)">▷ Play 10</button>
+                    <button class="play-btn btn-purple" onclick="startGame(20)">▷ Play 20</button>
+                </div>
+
+                <div class="demo-text">
+                    <strong>DEMO CREDITS ONLY — NO REAL MONEY</strong><br><br>
+                    <span id="status-text">You must join our channel to play.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCREEN 2: GAME BOARD -->
+        <div id="screen-game" class="screen hidden">
+            <div class="game-header">
+                <div class="current-ball">
+                    <div class="ball-circle" id="ball-display">--</div>
+                    <div class="ball-label">Last Drawn</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 12px; color: var(--text-muted);">Stake</div>
+                    <div style="font-size: 18px; font-weight: 700; color: var(--gold);" id="stake-display">10</div>
+                </div>
+            </div>
+
+            <div class="bingo-grid" id="bingo-grid">
+                <!-- Grid is generated by JavaScript -->
+            </div>
+
+            <button class="draw-btn" id="draw-btn" onclick="drawNumber()">DRAW NUMBER</button>
+        </div>
+    </main>
+
+    <nav class="bottom-nav">
+        <button class="nav-item active" onclick="resetGame()"><span class="nav-icon">🎮</span><span>Game</span></button>
+        <button class="nav-item"><span class="nav-icon">🕒</span><span>History</span></button>
+        <button class="nav-item"><span class="nav-icon">💳</span><span>Wallet</span></button>
+        <button class="nav-item"><span class="nav-icon">👤</span><span>Profile</span></button>
+    </nav>
+
+    <script>
+        // Game State
+        let currentStake = 0;
+        let bingoCard = [];
+        let drawnNumbers = [];
+        let availableNumbers = [];
+        let hasWon = false;
+
+        // 1. REQUEST CONTACT & REDIRECT FUNCTION
+        function requestContactAndJoin() {
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            
+            // YOUR CHANNEL LINK IS HERE
+            const channelLink = 'https://t.me/newbingolink'; 
+
+            tg.requestContact((wasShared) => {
+                if (wasShared) {
+                    // Success! Change UI to unlocked state
+                    isUnlocked = true;
+                    document.getElementById('unlock-btn').classList.add('hidden');
+                    document.getElementById('play-actions').classList.remove('hidden');
+                    document.getElementById('status-text').innerText = "Unlocked! Select a stake to play.";
+                    
+                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+
+                    // Open the Telegram Channel
+                    tg.openTelegramLink(channelLink);
+                } else {
+                    // User denied the request
+                    tg.showAlert("You must share your contact to unlock the game.");
+                }
+            });
+        }
+
+        function resetAvailableNumbers() {
+            availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
+        }
+
+        // Start Game
+        function startGame(stake) {
+            if (!isUnlocked) {
+                tg.showAlert("Please share your contact first!");
+                return;
+            }
+
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            
+            currentStake = stake;
+            document.getElementById('stake-display').innerText = stake;
+            
+            document.getElementById('screen-stake').classList.add('hidden');
+            document.getElementById('screen-game').classList.remove('hidden');
+            
+            generateCard();
+        }
+
+        // Generate random Bingo Card (1-75)
+        function generateCard() {
+            hasWon = false;
+            drawnNumbers = [];
+            resetAvailableNumbers();
+            document.getElementById('ball-display').innerText = "--";
+            document.getElementById('draw-btn').innerText = "DRAW NUMBER";
+            
+            let pool = Array.from({length: 75}, (_, i) => i + 1);
+            pool.sort(() => Math.random() - 0.5);
+            bingoCard = pool.slice(0, 25);
+
+            const grid = document.getElementById('bingo-grid');
+            grid.innerHTML = '';
+            
+            bingoCard.forEach((num, index) => {
+                const cell = document.createElement('div');
+                cell.className = 'bingo-cell';
+                cell.id = `cell-${num}`;
+                
+                if (index === 12) {
+                    cell.innerText = 'FREE';
+                    cell.classList.add('free-space', 'marked');
+                    drawnNumbers.push(num);
+                } else {
+                    cell.innerText = num;
+                }
+                grid.appendChild(cell);
+            });
+        }
+
+        // Draw a Number
+        function drawNumber() {
+            if (hasWon) return;
+            if (availableNumbers.length === 0) {
+                tg.showAlert("All numbers drawn!");
+                return;
+            }
+
+            const randomIndex = Math.floor(Math.random() * availableNumbers.length);
+            const drawnNum = availableNumbers.splice(randomIndex, 1)[0];
+            drawnNumbers.push(drawnNum);
+
+            document.getElementById('ball-display').innerText = drawnNum;
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+
+            const cell = document.getElementById(`cell-${drawnNum}`);
+            if (cell) {
+                cell.classList.add('marked');
+            }
+
+            checkWin();
+        }
+
+        // Check Win Condition
+        function checkWin() {
+            const grid = document.getElementById('bingo-grid');
+            const cells = grid.children;
+
+            const isMarked = (index) => {
+                if (index === 12) return true; 
+                return cells[index].classList.contains('marked');
+            };
+
+            const lines = [
+                [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
+                [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
+                [0,6,12,18,24], [4,8,12,16,20]
+            ];
+
+            for (let line of lines) {
+                if (line.every(index => isMarked(index))) {
+                    handleWin();
+                    break;
+                }
+            }
+        }
+
+        // Handle Win
+        function handleWin() {
+            hasWon = true;
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            
+            const grid = document.getElementById('bingo-grid');
+            for (let i = 0; i < grid.children.length; i++) {
+                grid.children[i].style.borderColor = 'var(--gold)';
+                grid.children[i].style.boxShadow = '0 0 10px var(--gold)';
+            }
+
+            tg.showPopup({
+                title: '🎉 BINGO! You Won!',
+                message: `You got a line! You won ${currentStake * 2} demo credits.`,
+                buttons: [{type: 'default', text: 'Awesome!'}]
+            });
+            
+            document.getElementById('draw-btn').innerText = "GAME OVER - WINNER!";
+            document.getElementById('draw-btn').style.background = "var(--btn-purple)";
+        }
+
+        // Reset Game
+        function resetGame() {
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('screen-stake').classList.remove('hidden');
+            document.getElementById('draw-btn').style.background = "var(--btn-green)";
+        }
+    </script>
+</body>
+</html>
